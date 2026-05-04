@@ -1,4 +1,4 @@
-package com.example.lunch_review;
+package com.example.lunchreview;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
