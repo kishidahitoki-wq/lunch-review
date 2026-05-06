@@ -27,14 +27,16 @@ public class GeminiClient {
     }
 
     /**
-     * ユーザーのレビュー入力を元に、DOのアクションと料理のビジュアル詳細を生成する
+     * 指定されたモデルを使用してコンテンツを生成する
      */
-    public String ask(String instruction) {
+    public String ask(String modelName, String instruction) {
         try {
-            var response = client.models.generateContent("gemini-2.5-flash", instruction, null);
+            // モデル名を引数で受け取ったものに差し替える
+            var response = client.models.generateContent(modelName, instruction, null);
             return response.text();
         } catch (Exception e) {
-            throw new RuntimeException("Gemini API通信エラー: " + e.getMessage());
+            // ここで429エラー等をそのまま投げることで、Service側で検知可能にする
+            throw new RuntimeException("API Error [" + modelName + "]: " + e.getMessage(), e);
         }
     }
 }

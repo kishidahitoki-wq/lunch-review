@@ -2,12 +2,24 @@ package com.example.lunchreview.service;
 
 import com.example.lunchreview.infrastructure.GeminiClient;
 import com.example.lunchreview.model.dto.ReviewRequest;
+
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 @Service
 public class PromptService {
 
     private final GeminiClient geminiClient;
+
+    // 優先して使いたいモデルのリスト
+    private final List<String> fallbackModels = List.of(
+        "gemini-2.5-pro",        // 1. 最強。一番賢いDO
+        "gemini-2.5-flash",      // 2. 高速・高性能。バランス型だDO
+        "gemini-2.0-flash",      // 3. 安定の旧世代高速モデルだDO
+        "gemini-2.5-flash-lite", // 4. 最終防衛線。一番軽いDO！
+        "gemini-2.0-flash-lite"  // 5. 最後の最後、粘りのLiteだDO
+    );
 
     public PromptService(GeminiClient geminiClient) {
         this.geminiClient = geminiClient;
@@ -33,7 +45,20 @@ public class PromptService {
 
         // 2. AIへの指示出しと回答取得
         String aiInstruction = buildAiInstruction(request, totalGridCells);
-        String aiGeneratedJsonParts = geminiClient.ask(aiInstruction);
+        String aiGeneratedJsonParts = null;
+        for (String modelName : fallbackModels) {
+            try {
+                aiGeneratedJsonParts = geminiClient.ask(modelName, aiInstruction);
+                break; // 成功した場合はループを終了
+            } catch (RuntimeException e) {
+                // 指定されたモデルでエラーが発生した場合、次のモデルに移行
+                System.err.println("Error with model " + modelName + ": " + e.getMessage());
+            }
+        }
+
+        if (aiGeneratedJsonParts == null) {
+            throw new RuntimeException("API Error : 全モデルの制限に達しました。しばらくしてから再試行してください。");
+        }
 
         // 3. 最終プロンプトテンプレート
         return String.format("""
@@ -53,15 +78,14 @@ public class PromptService {
             [Text & Icons Rules]
             At the very top of the entire image, a grand title banner reads: "%s".
 
-            /* Text & Icons Rules への追記 */
-            * [STRICT TEXT RULE]: For the TOP (Header) and BOTTOM (Footer), use the EXACT text provided in the JSON 'review' and 'comment' fields.
-            * DO NOT invent or add any words like "定食", "Plate", or specific food names if they are not in the JSON.
-            * If the JSON says "DO", write only "DO". No creative additions allowed.
+            [STRICT TEXT RULE]
+            For the TOP (Header) and BOTTOM (Footer), use the EXACT text provided in the Grid Content 'review' and 'comment' fields.
+            If the JSON says "DO", write only "DO". No creative additions allowed.
             
             Inside EACH grid cell, text and icons must be arranged strictly as follows:
-            1. TOP (Header): For LUNCH REVIEW cells, write the dish name in large, bold letters. For MUSCLE TRAINING cells, DO NOT write any text.
+            1. TOP (Header): For LUNCH REVIEW cells, write the text from JSON 'review' field in large, bold letters. For MUSCLE TRAINING cells, DO NOT write any text.
             2. IMMEDIATELY BELOW THE TOP TEXT: For LUNCH REVIEW cells, write "Score: X/5". For MUSCLE TRAINING cells, DO NOT write any text.
-            3. BOTTOM (Footer): For LUNCH REVIEW cells, write the comment inside a traditional scroll. For MUSCLE TRAINING cells, DO NOT write any text.
+            3. BOTTOM (Footer): For LUNCH REVIEW cells, write the exact comment inside a traditional scroll. For MUSCLE TRAINING cells, DO NOT write any text.
             
             * All text must be legible and avoid overlapping with DO's face.
             * Do not include any English action descriptions in the final image.
@@ -129,6 +153,14 @@ public class PromptService {
             No conversational text.
             """, summary);
 
-        return geminiClient.ask(instruction);
+        // リストを回して安全に生成する
+        for (String modelName : fallbackModels) {
+            try {
+                return geminiClient.ask(modelName, instruction);
+            } catch (Exception e) {
+                System.err.println("Character Generation Error with " + modelName + ": " + e.getMessage());
+            }
+        }
+        throw new RuntimeException("API Error : 全モデルの制限に達しました。しばらくしてから再試行してください。");
     } 
 }

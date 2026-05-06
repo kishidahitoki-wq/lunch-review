@@ -6,144 +6,301 @@
     <title>DO評 プロンプトメーカー</title>
     <style>
         :root {
+            --edo-gold: #d4af37;
+            --edo-black: #1a1a1a;
+            --edo-red: #8b0000;
+            --edo-white: #e8eaed;
+            --card-bg: rgba(45, 45, 45, 0.95);
+            --input-bg: #3d3d3d;
             --primary-color: #4285f4;
-            --bg-color: #f8f9fa;
-            --card-bg: #ffffff;
-            --border-color: #dee2e6;
         }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: #333; margin: 0; padding: 20px; line-height: 1.6; }
-        .container { max-width: 800px; margin: 0 auto; background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #202124; margin-bottom: 30px; }
-        
-        .section { margin-bottom: 25px; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; }
-        label { font-weight: bold; display: block; margin-bottom: 8px; color: #5f6368; }
-        
-        input[type="text"], input[type="number"], textarea {
-            width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; font-size: 14px; margin-bottom: 10px;
-        }
-        textarea { height: 80px; resize: vertical; }
 
-        .review-entry {
-            background: #f1f3f4; padding: 15px; border-radius: 8px; margin-bottom: 15px; position: relative; animation: fadeIn 0.3s ease;
+        body {
+            font-family: "Hiragino Mincho ProN", "ヒラギノ明朝 ProN", serif;
+            background-color: var(--edo-black);
+            color: var(--edo-white);
+            margin: 0;
+            padding: 20px;
+            background-image: radial-gradient(#333 1px, transparent 1px);
+            background-size: 20px 20px;
+            overflow-x: hidden; 
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 4px;
+            border: 4px double var(--edo-gold);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 10;
+        }
+
+        /* キャラクターエリア */
+        .char-fixed-area {
+            position: fixed;
+            bottom: -10px;
+            right: 0; 
+            width: 350px; 
+            z-index: 9999;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .char-img {
+            width: 100%;
+            filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.4));
+        }
+
+        .fukidashi {
+            position: relative;
+            background: var(--edo-white);
+            color: var(--edo-black);
+            padding: 10px 20px;
+            border-radius: 20px;
+            margin-bottom: -15px;
+            margin-right: 50px;
+            font-weight: bold;
+            border: 2px solid var(--edo-gold);
+            pointer-events: auto;
+            font-size: 0.9rem;
+        }
+
+        h1 { text-align: center; color: var(--edo-gold); text-shadow: 2px 2px 0px var(--edo-red); border-bottom: 1px solid var(--edo-gold); padding-bottom: 10px; }
+        .section { margin-bottom: 25px; padding: 15px; border: 1px solid #444; border-radius: 4px; background: rgba(0,0,0,0.2); }
+        label { font-weight: bold; display: block; margin-bottom: 10px; color: var(--edo-gold); }
+        input, select, textarea { width: 100%; padding: 12px; background: var(--input-bg); border: 1px solid #555; border-radius: 4px; color: white; box-sizing: border-box; margin-bottom: 10px; }
+        
+        /* 評価項目カード */
+        .review-entry { 
+            background: #333; 
+            padding: 20px 15px 15px 15px; 
+            border-radius: 4px; 
+            margin-bottom: 15px; 
+            position: relative; 
+            border-left: 5px solid var(--edo-gold); 
+            animation: fadeIn 0.3s ease; 
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .grid-inputs { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
-        .remove-btn {
-            position: absolute; top: 10px; right: 10px; background: #ea4335; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 14px;
+        
+        .grid-inputs { display: grid; grid-template-columns: 3fr 1fr; gap: 10px; }
+        
+        .remove-btn { 
+            position: absolute; 
+            top: -10px; 
+            right: -10px; 
+            background: var(--edo-red); 
+            color: white; 
+            border: 2px solid var(--edo-white); 
+            border-radius: 50%; 
+            width: 26px; 
+            height: 26px; 
+            cursor: pointer; 
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
         }
 
-        .actions { display: flex; gap: 10px; margin-top: 20px; }
-        .btn { flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; transition: opacity 0.2s; }
-        .btn-add { background-color: #34a853; color: white; }
-        .btn-generate { background-color: var(--primary-color); color: white; }
-        .btn:disabled { background-color: #ccc; cursor: not-allowed; }
-        .btn:hover { opacity: 0.9; }
+        .btn { padding: 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.2s; position: relative; overflow: hidden; }
+        .btn-add { background: transparent; color: var(--edo-gold); border: 2px dashed var(--edo-gold); margin-bottom: 20px; font-size: 1rem; }
+        .btn-generate { background: linear-gradient(135deg, var(--edo-gold), #b8860b); color: #1a1a1a; font-size: 1.2rem; box-shadow: 0 4px 0 var(--edo-red); }
+        .btn:disabled { opacity: 0.8; cursor: not-allowed; }
 
-        #resultContainer { margin-top: 30px; border-top: 2px solid var(--primary-color); padding-top: 20px; }
-        .result-box { background: #202124; color: #e8eaed; padding: 20px; border-radius: 8px; white-space: pre-wrap; font-family: 'Consolas', monospace; font-size: 13px; max-height: 400px; overflow-y: auto; }
-        .copy-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        
-        #loading { text-align: center; font-weight: bold; color: var(--primary-color); margin: 20px 0; display: none; }
+        /* AI作成ボタン専用アニメーション */
+        .btn-loading {
+            background: linear-gradient(90deg, #444, var(--edo-gold), #444) !important;
+            background-size: 200% 100% !important;
+            animation: loadingBar 1.5s infinite linear;
+            color: white !important;
+        }
+
+        @keyframes loadingBar {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        #loading { text-align: center; color: var(--edo-gold); margin: 20px 0; display: none; font-weight: bold; }
+
+        .result-box { 
+            background: #000; 
+            color: #0f0; 
+            padding: 20px; 
+            border-radius: 4px; 
+            white-space: pre-wrap; 
+            font-family: monospace; 
+            margin-top: 20px; 
+            border: 1px solid #333;
+            max-height: 300px; 
+            overflow-y: auto; 
+            border-left: 3px solid var(--edo-gold);
+        }
+
+        .do-loader {
+            text-align: center;
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--edo-gold);
+            margin-bottom: 10px;
+            text-shadow: 3px 3px 0px var(--edo-red);
+        }
+
+        .do-loader span {
+            display: inline-block;
+            animation: bounceDO 0.6s infinite alternate;
+        }
+        .do-loader span:nth-child(2) { animation-delay: 0.2s; }
+
+        @keyframes bounceDO {
+            from { transform: translateY(0) scale(1); }
+            to { transform: translateY(-20px) scale(1.1); }
+        }
     </style>
 </head>
 <body>
 
+<div class="char-fixed-area">
+    <div class="fukidashi" id="do-speech">データは嘘をつかないDO。</div>
+    <img src="do-hero.png" alt="DO Hero" class="char-img">
+</div>
+
 <div class="container">
-    <h1>🍴 DO評 プロンプトメーカー</h1>
+    <h1>🍴 本日のDO評メーカー</h1>
 
     <div class="section">
-        <label for="reviewTitle">1. レビュータイトル</label>
-        <input type="text" id="reviewTitle" value="日光大好きスキップ・テコテコ の『本日のDO評』">
+        <label for="reviewTitle">一. 題名</label>
+        <input type="text" id="reviewTitle" value="江戸ッ子DO の『本日のDO評』（Weekly Lunch Review）">
 
-        <label>2. キャラクターをAIで作成</label>
+        <label>二. キャラクター設定</label>
         <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-            <input type="text" id="charSummary" placeholder="例: 宇宙服を着たペンギンのシェフ" style="margin-bottom: 0;">
-            <button type="button" class="btn btn-add" onclick="autoGenerateCharacter()" style="flex: 0 0 150px;">AIキャラ生成</button>
+            <input type="text" id="charSummary" placeholder="筋肉隆々の江戸っ子" style="margin-bottom: 0;">
+            <button class="btn" id="charGenBtn" style="width:120px; background:#444; color:white; border:1px solid var(--edo-gold);" onclick="autoGenerateCharacter()">AI作成</button>
         </div>
-        
-        <label for="charSetting">キャラクター設定（プロンプト）</label>
-        <textarea id="charSetting" placeholder="AI生成ボタンを押すか、直接入力してください"></textarea>
+        <textarea id="charSetting" placeholder="AI生成ボタンを押すか、直接入力してDO！"></textarea>
     </div>
 
     <div class="section">
-        <label for="reviewStyle">3. 全体の画風を選択</label>
-        <select id="reviewStyle" style="width: 100%; padding: 12px; margin-bottom: 10px;">
+        <label for="reviewStyle">三. スタイル</label>
+        <select id="reviewStyle">
             <option value="photorealistic">リアル（3Dレンダリング風）</option>
             <option value="anime">アニメ（ジャンプ風）</option>
             <option value="ukiyo-e">浮世絵（江戸時代風）</option>
             <option value="pixel">ドット絵（レトロゲーム風）</option>
-            <option value="oil-painting">油絵（名画風）</option>
         </select>
     </div>
 
     <div class="section">
-        <label>3. レビュー項目 (最大9件)</label>
+        <label>四. 評価項目 (最大9枚)</label>
         <div id="reviewContainer">
-            <!-- 初期表示の1件目 -->
             <div class="review-entry">
+                <button class="remove-btn" onclick="removeField(this)">×</button>
                 <div class="grid-inputs">
-                    <input type="text" placeholder="料理名 (例: 特製唐揚げ弁当)" class="dish-name">
-                    <input type="number" placeholder="星 (1-5)" class="stars" min="1" max="5" value="5">
+                    <input type="text" placeholder="項目" class="dish-name">
+                    <input type="number" class="stars" min="1" max="5" value="5">
                 </div>
-                <input type="text" placeholder="一言コメント (例: 肉汁最高！)" class="comment">
+                <input type="text" placeholder="一言コメント" class="comment">
             </div>
         </div>
-        <button type="button" class="btn btn-add" onclick="addReviewField()">＋ 項目を追加</button>
+        <button class="btn btn-add" onclick="addReviewField()">＋ 項目を追加するDO！</button>
     </div>
 
-    <div class="actions">
-        <button class="btn btn-generate" id="generateBtn" onclick="generatePrompt()">プロンプトを生成する</button>
-    </div>
+    <button class="btn btn-generate" id="generateBtn" onclick="generatePrompt()">プロンプトを生成する</button>
 
-    <div id="loading">⏳ Geminiが究極の演出を肉付け中...</div>
+    <div id="loading">
+        <div class="do-loader">
+            <span>D</span><span>O</span>
+        </div>
+        <p id="loadingText">Geminiが究極の演出を肉付け中だDO...</p>
+    </div>
 
     <div id="resultContainer" style="display:none;">
-        <div class="copy-info">
-            <strong>生成されたプロンプト:</strong>
-            <button onclick="copyPrompt()">📋 クリップボードにコピー</button>
-        </div>
-        <div id="promptResult" class="result-box"></div>
-        <p style="text-align: center;">
-            <a id="geminiLink" href="https://gemini.google.com/app" target="_blank" style="color: var(--primary-color); text-decoration: none; font-weight: bold;">👉 Geminiを開いて貼り付ける</a>
-        </p>
+        <div class="result-box" id="promptResult"></div>
+        <button class="btn" style="background:var(--edo-gold); margin-top:10px;" onclick="copyPrompt()">📋 写本（コピー）する</button>
     </div>
 </div>
 
 <script>
+    // --- 初期化 ---
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.review-entry').forEach(entry => attachKeyEvents(entry));
+    });
+
+    function showLoading(text) {
+        document.getElementById('loadingText').textContent = text;
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('resultContainer').style.display = 'none';
+    }
+
+    function hideLoading() {
+        document.getElementById('loading').style.display = 'none';
+    }
+
+    // --- 項目操作 (Enter/Backspace対応) ---
     function addReviewField() {
         const container = document.getElementById('reviewContainer');
-        const currentCount = container.getElementsByClassName('review-entry').length;
-        
-        if (currentCount >= 9) {
-            alert("レビューは最大9件までです。");
-            return;
-        }
+        if (container.getElementsByClassName('review-entry').length >= 9) return;
 
         const div = document.createElement('div');
         div.className = 'review-entry';
         div.innerHTML = `
-            <button class="remove-btn" onclick="this.parentElement.remove()">×</button>
+            <button class="remove-btn" onclick="removeField(this)">×</button>
             <div class="grid-inputs">
-                <input type="text" placeholder="料理名" class="dish-name">
-                <input type="number" placeholder="星" class="stars" min="1" max="5" value="5">
+                <input type="text" placeholder="項目" class="dish-name">
+                <input type="number" class="stars" min="1" max="5" value="5">
             </div>
             <input type="text" placeholder="一言コメント" class="comment">
         `;
         container.appendChild(div);
+        div.querySelector('.dish-name').focus();
+        attachKeyEvents(div);
     }
 
+    function removeField(btn) {
+        const container = document.getElementById('reviewContainer');
+        if (container.getElementsByClassName('review-entry').length <= 1) return;
+        btn.parentElement.remove();
+    }
+
+    function attachKeyEvents(entry) {
+        const inputs = entry.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addReviewField();
+                }
+                if (e.key === 'Backspace') {
+                    const dish = entry.querySelector('.dish-name').value;
+                    const comm = entry.querySelector('.comment').value;
+                    if (dish === "" && comm === "") {
+                        const entries = document.getElementsByClassName('review-entry');
+                        if (entries.length > 1) {
+                            e.preventDefault();
+                            const prev = entry.previousElementSibling;
+                            entry.remove();
+                            if (prev) prev.querySelector('.comment').focus();
+                        }
+                    }
+                }
+            });
+        });
+    }
+
+    // --- 通信系 ---
     async function autoGenerateCharacter() {
         const summary = document.getElementById('charSummary').value;
-        if (!summary) {
-            alert("キャラクターの概要を入力してください。");
-            return;
-        }
-
-        const btn = event.target;
-        const originalText = btn.textContent;
-        btn.textContent = "生成中...";
+        if (!summary) return alert("概要を入力してDO！");
+        
+        const btn = document.getElementById('charGenBtn');
         btn.disabled = true;
+        btn.classList.add('btn-loading');
+        btn.textContent = "思案中...";
+        showLoading("最高のキャラ設定を思案中だDO！");
 
         try {
             const response = await fetch('/api/generate-character', {
@@ -151,80 +308,58 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ summary: summary })
             });
-            const result = await response.json();
-            
-            // 生成された詳細な設定を下のtextareaに流し込む
-            document.getElementById('charSetting').value = result.characterSetting;
+            const data = await response.json();
+            document.getElementById('charSetting').value = data.characterSetting;
         } catch (e) {
-            alert("キャラクター生成に失敗しました。");
+            alert("通信失敗だDO。");
         } finally {
-            btn.textContent = originalText;
             btn.disabled = false;
+            btn.classList.remove('btn-loading');
+            btn.textContent = "AI作成";
+            hideLoading();
         }
     }
 
     async function generatePrompt() {
         const btn = document.getElementById('generateBtn');
-        const loading = document.getElementById('loading');
-        const container = document.getElementById('resultContainer');
-        
-        btn.disabled = true;
-        loading.style.display = 'block';
-        container.style.display = 'none';
-
-        // データの収集
-        const title = document.getElementById('reviewTitle').value;
-        const charSetting = document.getElementById('charSetting').value;
-        const reviewElements = document.getElementsByClassName('review-entry');
-        
-        const reviews = Array.from(reviewElements).map(el => ({
+        const reviews = Array.from(document.querySelectorAll('.review-entry')).map(el => ({
             dishName: el.querySelector('.dish-name').value,
             stars: parseInt(el.querySelector('.stars').value) || 5,
             comment: el.querySelector('.comment').value
-        })).filter(r => r.dishName.trim() !== ""); // 料理名が空のものは除外
+        })).filter(r => r.dishName.trim() !== "");
 
-        if (reviews.length === 0) {
-            alert("少なくとも1件のレビューを入力してください。");
-            btn.disabled = false;
-            loading.style.display = 'none';
-            return;
-        }
+        if (reviews.length === 0) return alert("項目を埋めてDO！");
 
-        const style = document.getElementById('reviewStyle').value;
-
-        const payload = {
-            title: title,
-            characterSetting: charSetting,
-            style: style, // 追加
-            reviews: reviews
-        };
+        btn.disabled = true;
+        showLoading("プロンプト生成中だDO...");
 
         try {
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({
+                    title: document.getElementById('reviewTitle').value,
+                    characterSetting: document.getElementById('charSetting').value,
+                    style: document.getElementById('reviewStyle').value,
+                    reviews: reviews
+                })
             });
-            
-            if (!response.ok) throw new Error('サーバーエラーが発生しました');
-            
-            const result = await response.json();
-            document.getElementById('promptResult').textContent = result.prompt;
-            container.style.display = 'block';
+            const data = await response.json();
+            document.getElementById('promptResult').textContent = data.prompt;
+            document.getElementById('resultContainer').style.display = 'block';
+            document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' });
         } catch (e) {
-            alert('エラー: ' + e.message);
+            alert("失敗したDO...");
         } finally {
             btn.disabled = false;
-            loading.style.display = 'none';
+            hideLoading();
         }
     }
 
     function copyPrompt() {
-        const text = document.getElementById('promptResult').textContent;
-        navigator.clipboard.writeText(text);
-        alert('プロンプトをコピーしました！画像生成AIに貼り付けてください。');
+        navigator.clipboard.writeText(document.getElementById('promptResult').textContent)
+            .then(() => alert('写本完了だDO！'));
     }
 </script>
-
 </body>
 </html>
