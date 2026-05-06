@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DO評 プロンプトメーカー</title>
+    <style>
+        :root {
+            --primary-color: #4285f4;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --border-color: #dee2e6;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: #333; margin: 0; padding: 20px; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #202124; margin-bottom: 30px; }
+        
+        .section { margin-bottom: 25px; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; }
+        label { font-weight: bold; display: block; margin-bottom: 8px; color: #5f6368; }
+        
+        input[type="text"], input[type="number"], textarea {
+            width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; font-size: 14px; margin-bottom: 10px;
+        }
+        textarea { height: 80px; resize: vertical; }
+
+        .review-entry {
+            background: #f1f3f4; padding: 15px; border-radius: 8px; margin-bottom: 15px; position: relative; animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .grid-inputs { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+        .remove-btn {
+            position: absolute; top: 10px; right: 10px; background: #ea4335; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 14px;
+        }
+
+        .actions { display: flex; gap: 10px; margin-top: 20px; }
+        .btn { flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; transition: opacity 0.2s; }
+        .btn-add { background-color: #34a853; color: white; }
+        .btn-generate { background-color: var(--primary-color); color: white; }
+        .btn:disabled { background-color: #ccc; cursor: not-allowed; }
+        .btn:hover { opacity: 0.9; }
+
+        #resultContainer { margin-top: 30px; border-top: 2px solid var(--primary-color); padding-top: 20px; }
+        .result-box { background: #202124; color: #e8eaed; padding: 20px; border-radius: 8px; white-space: pre-wrap; font-family: 'Consolas', monospace; font-size: 13px; max-height: 400px; overflow-y: auto; }
+        .copy-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        
+        #loading { text-align: center; font-weight: bold; color: var(--primary-color); margin: 20px 0; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🍴 DO評 プロンプトメーカー</h1>
+
+    <div class="section">
+        <label for="reviewTitle">1. レビュータイトル</label>
+        <input type="text" id="reviewTitle" value="日光大好きスキップ・テコテコ の『本日のDO評』">
+
+        <label>2. キャラクターをAIで作成</label>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="charSummary" placeholder="例: 宇宙服を着たペンギンのシェフ" style="margin-bottom: 0;">
+            <button type="button" class="btn btn-add" onclick="autoGenerateCharacter()" style="flex: 0 0 150px;">AIキャラ生成</button>
+        </div>
+        
+        <label for="charSetting">キャラクター設定（プロンプト）</label>
+        <textarea id="charSetting" placeholder="AI生成ボタンを押すか、直接入力してください"></textarea>
+    </div>
+
+    <div class="section">
+        <label for="reviewStyle">3. 全体の画風を選択</label>
+        <select id="reviewStyle" style="width: 100%; padding: 12px; margin-bottom: 10px;">
+            <option value="photorealistic">リアル（3Dレンダリング風）</option>
+            <option value="anime">アニメ（ジャンプ風）</option>
+            <option value="ukiyo-e">浮世絵（江戸時代風）</option>
+            <option value="pixel">ドット絵（レトロゲーム風）</option>
+            <option value="oil-painting">油絵（名画風）</option>
+        </select>
+    </div>
+
+    <div class="section">
+        <label>3. レビュー項目 (最大9件)</label>
+        <div id="reviewContainer">
+            <!-- 初期表示の1件目 -->
+            <div class="review-entry">
+                <div class="grid-inputs">
+                    <input type="text" placeholder="料理名 (例: 特製唐揚げ弁当)" class="dish-name">
+                    <input type="number" placeholder="星 (1-5)" class="stars" min="1" max="5" value="5">
+                </div>
+                <input type="text" placeholder="一言コメント (例: 肉汁最高！)" class="comment">
+            </div>
+        </div>
+        <button type="button" class="btn btn-add" onclick="addReviewField()">＋ 項目を追加</button>
+    </div>
+
+    <div class="actions">
+        <button class="btn btn-generate" id="generateBtn" onclick="generatePrompt()">プロンプトを生成する</button>
+    </div>
+
+    <div id="loading">⏳ Geminiが究極の演出を肉付け中...</div>
+
+    <div id="resultContainer" style="display:none;">
+        <div class="copy-info">
+            <strong>生成されたプロンプト:</strong>
+            <button onclick="copyPrompt()">📋 クリップボードにコピー</button>
+        </div>
+        <div id="promptResult" class="result-box"></div>
+        <p style="text-align: center;">
+            <a id="geminiLink" href="https://gemini.google.com/app" target="_blank" style="color: var(--primary-color); text-decoration: none; font-weight: bold;">👉 Geminiを開いて貼り付ける</a>
+        </p>
+    </div>
+</div>
+
+<script>
+    function addReviewField() {
+        const container = document.getElementById('reviewContainer');
+        const currentCount = container.getElementsByClassName('review-entry').length;
+        
+        if (currentCount >= 9) {
+            alert("レビューは最大9件までです。");
+            return;
+        }
+
+        const div = document.createElement('div');
+        div.className = 'review-entry';
+        div.innerHTML = `
+            <button class="remove-btn" onclick="this.parentElement.remove()">×</button>
+            <div class="grid-inputs">
+                <input type="text" placeholder="料理名" class="dish-name">
+                <input type="number" placeholder="星" class="stars" min="1" max="5" value="5">
+            </div>
+            <input type="text" placeholder="一言コメント" class="comment">
+        `;
+        container.appendChild(div);
+    }
+
+    async function autoGenerateCharacter() {
+        const summary = document.getElementById('charSummary').value;
+        if (!summary) {
+            alert("キャラクターの概要を入力してください。");
+            return;
+        }
+
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = "生成中...";
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/api/generate-character', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ summary: summary })
+            });
+            const result = await response.json();
+            
+            // 生成された詳細な設定を下のtextareaに流し込む
+            document.getElementById('charSetting').value = result.characterSetting;
+        } catch (e) {
+            alert("キャラクター生成に失敗しました。");
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    async function generatePrompt() {
+        const btn = document.getElementById('generateBtn');
+        const loading = document.getElementById('loading');
+        const container = document.getElementById('resultContainer');
+        
+        btn.disabled = true;
+        loading.style.display = 'block';
+        container.style.display = 'none';
+
+        // データの収集
+        const title = document.getElementById('reviewTitle').value;
+        const charSetting = document.getElementById('charSetting').value;
+        const reviewElements = document.getElementsByClassName('review-entry');
+        
+        const reviews = Array.from(reviewElements).map(el => ({
+            dishName: el.querySelector('.dish-name').value,
+            stars: parseInt(el.querySelector('.stars').value) || 5,
+            comment: el.querySelector('.comment').value
+        })).filter(r => r.dishName.trim() !== ""); // 料理名が空のものは除外
+
+        if (reviews.length === 0) {
+            alert("少なくとも1件のレビューを入力してください。");
+            btn.disabled = false;
+            loading.style.display = 'none';
+            return;
+        }
+
+        const style = document.getElementById('reviewStyle').value;
+
+        const payload = {
+            title: title,
+            characterSetting: charSetting,
+            style: style, // 追加
+            reviews: reviews
+        };
+
+        try {
+            const response = await fetch('/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            if (!response.ok) throw new Error('サーバーエラーが発生しました');
+            
+            const result = await response.json();
+            document.getElementById('promptResult').textContent = result.prompt;
+            container.style.display = 'block';
+        } catch (e) {
+            alert('エラー: ' + e.message);
+        } finally {
+            btn.disabled = false;
+            loading.style.display = 'none';
+        }
+    }
+
+    function copyPrompt() {
+        const text = document.getElementById('promptResult').textContent;
+        navigator.clipboard.writeText(text);
+        alert('プロンプトをコピーしました！画像生成AIに貼り付けてください。');
+    }
+</script>
+
+</body>
+</html>
