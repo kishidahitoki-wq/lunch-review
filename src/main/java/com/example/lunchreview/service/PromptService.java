@@ -103,6 +103,7 @@ public class PromptService {
             styleDescription, // スタイルを流し込む
             totalItems,
             request.characterSetting(),
+            totalItems,
             aiGeneratedJsonParts,
             layoutDescription,
             totalItems,
