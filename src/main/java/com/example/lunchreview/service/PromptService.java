@@ -66,6 +66,8 @@ public class PromptService {
             [Overall Structure & Style]
             %s.
             The overall image is a montage of %d separate panels.
+            High resolution, 1024px or higher, ultra-detailed quality.
+            Ensure generous white space (negative space) between elements to prevent clutter.
 
             [Fixed Character: DO]
             %s
@@ -80,9 +82,12 @@ public class PromptService {
             
             [Text & Icons Rules]
             At the very top of the entire image, a grand title banner reads: "%s".
+            - Use Bold Gothic Font (Sans-serif) for all text to ensure maximum readability.
+            - Text size must be large and prominent within each panel.
             - The review is text at the top of the cell.
             - The rating is shown by 5 star icons (filled gold stars).
             - The comment text is in a traditional-looking text box at the bottom.
+            - Maintain wide margins and padding around all text and icons for a clean look.
             """, 
             styleDescription, // スタイルを流し込む
             totalItems,
