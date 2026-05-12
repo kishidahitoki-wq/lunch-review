@@ -88,8 +88,8 @@ public class PromptService {
             totalItems,
             request.characterSetting(),
             aiGeneratedJsonParts,
-            totalItems,
             layoutDescription,
+            totalItems,
             request.title()
         );
     }
