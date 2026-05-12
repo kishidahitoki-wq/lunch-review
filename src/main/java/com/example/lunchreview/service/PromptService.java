@@ -77,18 +77,9 @@ public class PromptService {
             
             [Text & Icons Rules]
             At the very top of the entire image, a grand title banner reads: "%s".
-
-            [STRICT TEXT RULE]
-            For the TOP (Header) and BOTTOM (Footer), use the EXACT text provided in the Grid Content 'review' and 'comment' fields.
-            If the JSON says "DO", write only "DO". No creative additions allowed.
-            
-            Inside EACH grid cell, text and icons must be arranged strictly as follows:
-            1. TOP (Header): For LUNCH REVIEW cells, write the text from JSON 'review' field in large, bold letters. For MUSCLE TRAINING cells, DO NOT write any text.
-            2. IMMEDIATELY BELOW THE TOP TEXT: For LUNCH REVIEW cells, write "Score: X/5". For MUSCLE TRAINING cells, DO NOT write any text.
-            3. BOTTOM (Footer): For LUNCH REVIEW cells, write the exact comment inside a traditional scroll. For MUSCLE TRAINING cells, DO NOT write any text.
-            
-            * All text must be legible and avoid overlapping with DO's face.
-            * Do not include any English action descriptions in the final image.
+            - The review is text at the top of the cell.
+            - The rating is shown by 5 star icons (filled gold stars).
+            - The comment text is in a traditional-looking text box at the bottom.
             """, 
             styleDescription, // スタイルを流し込む
             gridLayout,
@@ -102,42 +93,48 @@ public class PromptService {
 
     private String buildAiInstruction(ReviewRequest request, int totalGridCells) {
         int reviewCount = request.reviews().size();
-        int emptyCells = totalGridCells - reviewCount;
-
+        
         StringBuilder sb = new StringBuilder();
-        sb.append("Convert these lunch reviews into a JSON array for an image prompt.\n");
-        sb.append("The character 'DO' has this setting: ").append(request.characterSetting()).append("\n"); 
-        sb.append("Each object MUST have: 'cell_number', 'review', 'rating', 'comment', 'do_action_and_expression', 'visual_detail'.\n\n");
-        sb.append("### CRITICAL DATA INTEGRITY RULES ###\n");
-        sb.append("1. The 'review' field is a generic LABEL. It may contain nonsense, names, or non-food items.\n");
-        sb.append("2. You MUST copy the 'review' and 'comment' values EXACTLY as provided by the user.\n");
-        sb.append("3. DO NOT use the visual context (like food in the scene) to rename the 'review' field.\n");
-        sb.append("4. If the user input is 'DODO', the output JSON 'review' MUST be 'DODO'. Never 'Hamburger' or anything else.\n\n");
+        
+        // 1. 指示
+        sb.append("# 指示\n");
+        sb.append("与えられた入力に適したdo_action_and_expressionとvisual_detailを考え出力してください。\n");
+        sb.append("なお、与えられた入力の文言（review, rating, comment）は絶対に変えないでください。\n\n");
 
-        // 視覚描写についても、特定の料理名を固定しないように指示
-        sb.append("When describing 'visual_detail', if the 'review' content is ambiguous (like 'DODO'), ");
-        sb.append("describe a high-protein, hearty meal in general terms (e.g., 'a grand feast', 'a large platter') ");
-        sb.append("rather than naming a specific dish that might contradict the label.\n\n");
-
-        // ランチレビューの枠
+        // 2. 入力
+        sb.append("# 入力\n");
+        // 実データの入力（セル1〜N）
         for (int i = 0; i < reviewCount; i++) {
             var item = request.reviews().get(i);
-            sb.append(String.format("- Cell: %d, review: %s, rating: %d, comment: %s\n", 
-                i + 1, item.dishName(), item.stars(), item.comment()));
+            sb.append(String.format("- cell_number%d\n", i + 1));
+            sb.append(String.format("    - review: %s\n", item.dishName()));
+            sb.append(String.format("    - rating: %d / 5 Stars\n", item.stars()));
+            sb.append(String.format("    - comment: %s\n", item.comment()));
         }
 
-        // 筋トレの枠（余り分）
-        if (emptyCells > 0) {
-            sb.append("\n- Remaining Cells (");
-            for (int i = reviewCount + 1; i <= totalGridCells; i++) {
-                sb.append(i).append(i == totalGridCells ? "" : ", ");
-            }
-            sb.append("): Describe DO performing intense muscle hypertrophy training (e.g., bench press, squats, leg press). ");
-            sb.append("Make these cells pure training scenes WITHOUT food. Set 'review', 'rating', and 'comment' to 'NONE'.\n");
-        }
+        sb.append("\n");
 
-        sb.append("\nReturn ONLY the raw JSON array. No conversational text or markdown blocks.");
-        System.out.println("AI Instruction:\n" + sb.toString()); // デバッグ用
+        // 3. 出力フォーマット
+        sb.append("# 出力フォーマット\n");
+        sb.append("以下のJSON形式で出力してください。全セルのデータを省略せずに出力してください。\n\n");
+        sb.append("{\n");
+        sb.append("  \"grid_items\": [\n");
+        
+        // セル1からセル9までの雛形（AIに全件出力を促すための例示）
+        for (int i = 1; i <= totalGridCells; i++) {
+            sb.append("    {\n");
+            sb.append(String.format("      \"cell_number\": %d,\n", i));
+            sb.append(String.format("      \"review\": \"[入力セルのreview %d をそのままコピー]\",\n", i));
+            sb.append(String.format("      \"rating\": \"[入力セルのrating %d をそのままコピー]\",\n", i));
+            sb.append(String.format("      \"comment\": \"[入力セルのcomment %d をそのままコピー]\",\n", i));
+            sb.append("      \"do_action_and_expression\": \"[DOのアクションと表情の具体的な描写 (英語)]\",\n");
+            sb.append("      \"visual_detail\": \"[料理や小道具の具体的なディテール描写 (英語)]\"\n");
+            sb.append(i == totalGridCells ? "    }\n" : "    },\n");
+        }
+        
+        sb.append("  ]\n");
+        sb.append("}\n");
+
         return sb.toString();
     }
 
