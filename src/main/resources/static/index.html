@@ -4,188 +4,218 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DO評 プロンプトメーカー</title>
-    <style>
+<style>
         :root {
-            --edo-gold: #d4af37;
-            --edo-black: #1a1a1a;
-            --edo-red: #8b0000;
-            --edo-white: #e8eaed;
-            --card-bg: rgba(45, 45, 45, 0.95);
-            --input-bg: #3d3d3d;
-            --primary-color: #4285f4;
+            --primary-color: #3b82f6;
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --input-bg: #2d2d2d;
+            --text-main: #e2e8f0;
+            --text-sub: #94a3b8;
+            --border-color: #334155;
+            --accent-red: #ef4444;
+            --accent-gold: #fbbf24;
         }
 
         body {
-            font-family: "Hiragino Mincho ProN", "ヒラギノ明朝 ProN", serif;
-            background-color: var(--edo-black);
-            color: var(--edo-white);
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
             margin: 0;
             padding: 20px;
-            background-image: radial-gradient(#333 1px, transparent 1px);
-            background-size: 20px 20px;
-            overflow-x: hidden; 
+            line-height: 1.6;
+        }
+
+        .ime-active {
+            ime-mode: active;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 700px;
             margin: 0 auto;
             background: var(--card-bg);
-            padding: 30px;
-            border-radius: 4px;
-            border: 4px double var(--edo-gold);
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            position: relative;
-            z-index: 10;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-color);
         }
 
-        /* キャラクターエリア */
-        .char-fixed-area {
-            position: fixed;
-            bottom: -10px;
-            right: 0; 
-            width: 350px; 
-            z-index: 9999;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        h1 { 
+            text-align: center; 
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            color: var(--accent-gold);
+            font-weight: 800;
+            letter-spacing: 0.05em;
         }
 
-        .char-img {
-            width: 100%;
-            filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.4));
+        .section { 
+            margin-bottom: 30px; 
         }
 
-        .fukidashi {
-            position: relative;
-            background: var(--edo-white);
-            color: var(--edo-black);
-            padding: 10px 20px;
-            border-radius: 20px;
-            margin-bottom: -15px;
-            margin-right: 50px;
-            font-weight: bold;
-            border: 2px solid var(--edo-gold);
-            pointer-events: auto;
+        label { 
+            font-weight: 600; 
+            display: block; 
+            margin-bottom: 8px; 
             font-size: 0.9rem;
+            color: var(--text-sub);
         }
 
-        h1 { text-align: center; color: var(--edo-gold); text-shadow: 2px 2px 0px var(--edo-red); border-bottom: 1px solid var(--edo-gold); padding-bottom: 10px; }
-        .section { margin-bottom: 25px; padding: 15px; border: 1px solid #444; border-radius: 4px; background: rgba(0,0,0,0.2); }
-        label { font-weight: bold; display: block; margin-bottom: 10px; color: var(--edo-gold); }
-        input, select, textarea { width: 100%; padding: 12px; background: var(--input-bg); border: 1px solid #555; border-radius: 4px; color: white; box-sizing: border-box; margin-bottom: 10px; }
-        
-        /* 評価項目カード */
+        input, select, textarea { 
+            width: 100%; 
+            padding: 10px 12px; 
+            background: var(--input-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: 6px; 
+            color: var(--text-main); 
+            box-sizing: border-box; 
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        textarea { height: 100px; resize: vertical; }
+
         .review-entry { 
-            background: #333; 
-            padding: 20px 15px 15px 15px; 
-            border-radius: 4px; 
+            background: rgba(255, 255, 255, 0.03); 
+            padding: 20px; 
+            border-radius: 8px; 
             margin-bottom: 15px; 
             position: relative; 
-            border-left: 5px solid var(--edo-gold); 
+            border-left: 4px solid var(--primary-color);
             animation: fadeIn 0.3s ease; 
         }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
-        .grid-inputs { display: grid; grid-template-columns: 3fr 1fr; gap: 10px; }
+        .grid-inputs { 
+            display: grid; 
+            grid-template-columns: 1fr 80px; 
+            gap: 10px; 
+            margin-bottom: 10px;
+        }
         
         .remove-btn { 
             position: absolute; 
-            top: -10px; 
-            right: -10px; 
-            background: var(--edo-red); 
+            top: -8px; 
+            right: -8px; 
+            background: var(--accent-red); 
             color: white; 
-            border: 2px solid var(--edo-white); 
+            border: none;
             border-radius: 50%; 
-            width: 26px; 
-            height: 26px; 
+            width: 24px; 
+            height: 24px; 
             cursor: pointer; 
-            z-index: 20;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
-        .btn { padding: 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.2s; position: relative; overflow: hidden; }
-        .btn-add { background: transparent; color: var(--edo-gold); border: 2px dashed var(--edo-gold); margin-bottom: 20px; font-size: 1rem; }
-        .btn-generate { background: linear-gradient(135deg, var(--edo-gold), #b8860b); color: #1a1a1a; font-size: 1.2rem; box-shadow: 0 4px 0 var(--edo-red); }
-        .btn:disabled { opacity: 0.8; cursor: not-allowed; }
-
-        /* AI作成ボタン専用アニメーション */
-        .btn-loading {
-            background: linear-gradient(90deg, #444, var(--edo-gold), #444) !important;
-            background-size: 200% 100% !important;
-            animation: loadingBar 1.5s infinite linear;
-            color: white !important;
+        .btn { 
+            padding: 12px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            width: 100%; 
+            transition: 0.2s; 
+            font-size: 1rem;
         }
 
-        @keyframes loadingBar {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
+        .btn-add { 
+            background: transparent; 
+            color: var(--text-sub); 
+            border: 1px dashed var(--border-color); 
+            margin-bottom: 20px; 
+        }
+        .btn-add:hover { 
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border-style: solid;
         }
 
-        #loading { text-align: center; color: var(--edo-gold); margin: 20px 0; display: none; font-weight: bold; }
+        .btn-generate { 
+            background: var(--primary-color); 
+            color: white; 
+            font-size: 1.1rem;
+            margin-top: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+        .btn-generate:hover { background: #2563eb; transform: translateY(-1px); }
+        .btn-generate:active { transform: translateY(0); }
 
+        .char-fixed-area {
+            position: fixed;
+            bottom: 20px;
+            right: 20px; 
+            width: 100px; 
+            z-index: 100;
+            pointer-events: none;
+            text-align: center;
+        }
+
+        .char-img { width: 100%; opacity: 0.6; filter: grayscale(30%); }
+
+        .fukidashi {
+            background: var(--input-bg);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            margin-bottom: 5px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            pointer-events: auto;
+        }
+
+        #loading { text-align: center; margin: 20px 0; display: none; }
         .result-box { 
             background: #000; 
-            color: #0f0; 
+            color: #10b981; 
             padding: 20px; 
-            border-radius: 4px; 
+            border-radius: 8px; 
             white-space: pre-wrap; 
-            font-family: monospace; 
+            font-family: 'Consolas', 'Monaco', monospace; 
             margin-top: 20px; 
-            border: 1px solid #333;
             max-height: 300px; 
             overflow-y: auto; 
-            border-left: 3px solid var(--edo-gold);
+            font-size: 0.9rem;
+            border: 1px solid var(--border-color);
         }
 
-        .do-loader {
-            text-align: center;
-            font-size: 3rem;
-            font-weight: 900;
-            color: var(--edo-gold);
-            margin-bottom: 10px;
-            text-shadow: 3px 3px 0px var(--edo-red);
-        }
-
-        .do-loader span {
-            display: inline-block;
-            animation: bounceDO 0.6s infinite alternate;
-        }
-        .do-loader span:nth-child(2) { animation-delay: 0.2s; }
-
-        @keyframes bounceDO {
-            from { transform: translateY(0) scale(1); }
-            to { transform: translateY(-20px) scale(1.1); }
-        }
+        .do-loader { font-size: 2rem; font-weight: bold; color: var(--accent-gold); }
+        .do-loader span { display: inline-block; animation: bounce 0.5s infinite alternate; }
+        @keyframes bounce { to { transform: translateY(-10px); } }
     </style>
 </head>
 <body>
-
-<div class="char-fixed-area">
-    <div class="fukidashi" id="do-speech">データは嘘をつかないDO。</div>
-    <img src="do-hero.png" alt="DO Hero" class="char-img">
-</div>
 
 <div class="container">
     <h1>🍴 本日のDO評メーカー</h1>
 
     <div class="section">
-        <label for="reviewTitle">一. 題名</label>
+        <label for="reviewTitle">題名</label>
         <input type="text" id="reviewTitle" value="江戸ッ子DO の『本日のDO評』（Weekly Lunch Review）">
-
-        <label>二. キャラクター設定</label>
-        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-            <input type="text" id="charSummary" placeholder="筋肉隆々の江戸っ子" style="margin-bottom: 0;">
-            <button class="btn" id="charGenBtn" style="width:120px; background:#444; color:white; border:1px solid var(--edo-gold);" onclick="autoGenerateCharacter()">AI作成</button>
-        </div>
-        <textarea id="charSetting" placeholder="AI生成ボタンを押すか、直接入力してDO！"></textarea>
     </div>
 
     <div class="section">
-        <label for="reviewStyle">三. スタイル</label>
+        <label>キャラクター設定</label>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="charSummary" placeholder="例：筋肉隆々の江戸っ子" style="flex: 1;" class="ime-active" inputmode="text">
+            <button class="btn" id="charGenBtn" style="width:100px; background:#64748b; color:white;" onclick="autoGenerateCharacter()">AI作成</button>
+        </div>
+        <textarea id="charSetting" placeholder="AI生成ボタンを押すか、直接入力してください。" class="ime-active" inputmode="text"></textarea>
+    </div>
+
+    <div class="section">
+        <label for="reviewStyle">スタイル</label>
         <select id="reviewStyle">
             <option value="photorealistic">リアル（3Dレンダリング風）</option>
             <option value="anime">アニメ（ジャンプ風）</option>
@@ -195,40 +225,38 @@
     </div>
 
     <div class="section">
-        <label>四. 評価項目 (最大9枚)</label>
+        <label>評価項目 (最大9枚)</label>
         <div id="reviewContainer">
             <div class="review-entry">
                 <button class="remove-btn" onclick="removeField(this)">×</button>
                 <div class="grid-inputs">
-                    <input type="text" placeholder="項目" class="dish-name" style="ime-mode: active">
+                    <input type="text" placeholder="項目（例：特製醤油ラーメン）" class="dish-name ime-active" inputmode="text">
                     <input type="number" class="stars" min="1" max="5" value="5">
-                    <input type="text" placeholder="一言コメント" class="comment" style="ime-mode: active">
                 </div>
+                <input type="text" placeholder="一言コメント" class="comment ime-active" inputmode="text">
             </div>
         </div>
-        <button class="btn btn-add" onclick="addReviewField()">＋ 項目を追加するDO！</button>
+        <button class="btn btn-add" onclick="addReviewField()">＋ 項目を追加する</button>
     </div>
 
     <button class="btn btn-generate" id="generateBtn" onclick="generatePrompt()">プロンプトを生成する</button>
 
     <div id="loading">
-        <div class="do-loader">
-            <span>D</span><span>O</span>
-        </div>
-        <p id="loadingText">Geminiが究極の演出を肉付け中だDO...</p>
+        <div class="do-loader"><span>D</span><span>O</span></div>
+        <p id="loadingText" style="color: var(--text-sub); font-size: 0.9rem;">Geminiが構成を考えています...</p>
     </div>
 
     <div id="resultContainer" style="display:none;">
         <div class="result-box" id="promptResult"></div>
-        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-            <button class="btn" style="background:var(--edo-gold); color: #1a1a1a;" onclick="copyPrompt()">📋 写本（コピー）する</button>
-            <a href="https://gemini.google.com/app" target="_blank" class="btn" style="background:#4285f4; color:white; text-decoration:none; display: flex; align-items: center; justify-content: center;">🚀 Geminiへ飛ぶDO！</a>
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button class="btn" style="background:#64748b; color: white; flex: 1;" onclick="copyPrompt()">📋 コピーする</button>
+            <a href="https://gemini.google.com/app" target="_blank" class="btn" style="background:var(--primary-color); color:white; text-decoration:none; display: flex; align-items: center; justify-content: center; flex: 1;">🚀 Geminiを開く</a>
         </div>
     </div>
 </div>
 
 <script>
-    // --- 初期化 ---
+    /* JavaScriptは元の処理を完全に維持 */
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.review-entry').forEach(entry => attachKeyEvents(entry));
     });
@@ -243,7 +271,6 @@
         document.getElementById('loading').style.display = 'none';
     }
 
-    // --- 項目操作 (Enter/Backspace対応) ---
     function addReviewField() {
         const container = document.getElementById('reviewContainer');
         if (container.getElementsByClassName('review-entry').length >= 9) return;
@@ -294,15 +321,12 @@
         });
     }
 
-    // --- 通信系 ---
     async function autoGenerateCharacter() {
         const summary = document.getElementById('charSummary').value;
         if (!summary) return alert("概要を入力してDO！");
         
         const btn = document.getElementById('charGenBtn');
         btn.disabled = true;
-        btn.classList.add('btn-loading');
-        btn.textContent = "思案中...";
         showLoading("最高のキャラ設定を思案中だDO！");
 
         try {
@@ -317,8 +341,6 @@
             alert("通信失敗だDO。");
         } finally {
             btn.disabled = false;
-            btn.classList.remove('btn-loading');
-            btn.textContent = "AI作成";
             hideLoading();
         }
     }
@@ -361,7 +383,7 @@
 
     function copyPrompt() {
         navigator.clipboard.writeText(document.getElementById('promptResult').textContent)
-            .then(() => alert('写本完了だDO！'));
+            .then(() => alert('コピーしました'));
     }
 </script>
 </body>
