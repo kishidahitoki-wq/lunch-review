@@ -30,8 +30,10 @@ public class PromptService {
 
         // 特定のNxNグリッドではなく、「複数のパネルの集合体」として定義
         // 画像生成AIには "A collection of X panels" と伝えるのがスムーズです
+        // 80/20の垂直レイアウトを明示的に定義
         String layoutDescription = String.format(
-            "A multi-panel composition consisting of exactly %d distinct scenes in a dynamic layout.", 
+            "The image has a strict vertical composition. The upper 80%% of the frame is a grid layout containing %d review panels. " +
+            "The lower 20%% of the frame is a dedicated wide-shot horizontal banner showcasing the character in a unique thematic environment.", 
             totalItems
         );
 
@@ -63,6 +65,10 @@ public class PromptService {
 
         // 3. 最終プロンプトテンプレート
         return String.format("""
+            [Canvas Layout: 80/20 Split]
+            - UPPER 80%%: A multi-panel montage of %d distinct food reviews.
+            - LOWER 20%%: A special character showcase area (Signature Illustration).
+
             [Overall Structure & Style]
             %s.
             The overall image is a montage of %d separate panels.
@@ -72,8 +78,12 @@ public class PromptService {
             [Fixed Character: DO]
             %s
 
-            [Grid Content]
+            [Upper Area: Grid Content (%d Panels)]
             %s
+
+            [Lower Area: Character Showcase (Signature Illustration)]
+            In this bottom 20%% horizontal section, depict the Fixed Character: DO in a single, cinematic wide-angle scene:
+            This section should feel like a signature ending or a "special cut" of the character, distinct from the panels above but sharing the same art style.
 
             [Layout & Lighting]
             %s.
@@ -89,6 +99,7 @@ public class PromptService {
             - The comment text is in a traditional-looking text box at the bottom.
             - Maintain wide margins and padding around all text and icons for a clean look.
             """, 
+            totalItems,
             styleDescription, // スタイルを流し込む
             totalItems,
             request.characterSetting(),
