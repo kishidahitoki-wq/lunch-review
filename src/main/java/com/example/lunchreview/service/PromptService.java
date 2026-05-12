@@ -26,13 +26,14 @@ public class PromptService {
     }
 
     public String generate(ReviewRequest request) {
-        // 1. レビュー数に基づいてグリッドサイズを計算
-        int reviewCount = Math.min(request.reviews().size(), 9); 
-        int side = (int) Math.ceil(Math.sqrt(reviewCount));
-        if (side < 2) side = 2; // 最低2x2
-        
-        String gridLayout = side + "x" + side;
-        int totalGridCells = side * side;
+        int totalItems = request.reviews().size();
+
+        // 特定のNxNグリッドではなく、「複数のパネルの集合体」として定義
+        // 画像生成AIには "A collection of X panels" と伝えるのがスムーズです
+        String layoutDescription = String.format(
+            "A multi-panel composition consisting of exactly %d distinct scenes in a dynamic layout.", 
+            totalItems
+        );
 
         // --- 追加：スタイルに応じた描写の定義 ---
         String styleDescription = switch (request.style()) {
@@ -44,7 +45,7 @@ public class PromptService {
         };
 
         // 2. AIへの指示出しと回答取得
-        String aiInstruction = buildAiInstruction(request, totalGridCells);
+        String aiInstruction = buildAiInstruction(request, totalItems);
         String aiGeneratedJsonParts = null;
         for (String modelName : fallbackModels) {
             try {
@@ -63,7 +64,8 @@ public class PromptService {
         // 3. 最終プロンプトテンプレート
         return String.format("""
             [Overall Structure & Style]
-            %s Presented as a %s grid layout of %d distinct scenes.
+            %s.
+            The overall image is a montage of %d separate panels.
 
             [Fixed Character: DO]
             %s
@@ -72,8 +74,9 @@ public class PromptService {
             %s
 
             [Layout & Lighting]
-            Each of the %d cells has a thick, dark wooden frame, making it look like a collection of valuable paintings. 
-            Cinematic lighting with deep shadows prevails, illuminating DO against a plain, misty gray background in each panel.
+            %s.
+            Each panel is separated by a dark, thin border.
+            The panels are arranged organically to fill the frame, creating a rich visual story of %d different food experiences.
             
             [Text & Icons Rules]
             At the very top of the entire image, a grand title banner reads: "%s".
@@ -82,11 +85,11 @@ public class PromptService {
             - The comment text is in a traditional-looking text box at the bottom.
             """, 
             styleDescription, // スタイルを流し込む
-            gridLayout,
-            totalGridCells,
+            totalItems,
             request.characterSetting(),
             aiGeneratedJsonParts,
-            totalGridCells,
+            totalItems,
+            layoutDescription,
             request.title()
         );
     }
@@ -106,7 +109,7 @@ public class PromptService {
         // 実データの入力（セル1〜N）
         for (int i = 0; i < reviewCount; i++) {
             var item = request.reviews().get(i);
-            sb.append(String.format("- cell_number%d\n", i + 1));
+            sb.append(String.format("- panel_number%d\n", i + 1));
             sb.append(String.format("    - review: %s\n", item.dishName()));
             sb.append(String.format("    - rating: %d / 5 Stars\n", item.stars()));
             sb.append(String.format("    - comment: %s\n", item.comment()));
@@ -118,12 +121,12 @@ public class PromptService {
         sb.append("# 出力フォーマット\n");
         sb.append("以下のJSON形式で出力してください。全セルのデータを省略せずに出力してください。\n\n");
         sb.append("{\n");
-        sb.append("  \"grid_items\": [\n");
+        sb.append("  \"panels\": [\n");
         
         // セル1からセル9までの雛形（AIに全件出力を促すための例示）
         for (int i = 1; i <= totalGridCells; i++) {
             sb.append("    {\n");
-            sb.append(String.format("      \"cell_number\": %d,\n", i));
+            sb.append(String.format("      \"panel_number\": %d,\n", i));
             sb.append(String.format("      \"review\": \"[入力セルのreview %d をそのままコピー]\",\n", i));
             sb.append(String.format("      \"rating\": \"[入力セルのrating %d をそのままコピー]\",\n", i));
             sb.append(String.format("      \"comment\": \"[入力セルのcomment %d をそのままコピー]\",\n", i));
