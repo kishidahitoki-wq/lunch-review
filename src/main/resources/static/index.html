@@ -224,7 +224,7 @@
         </select>
     </div>
 
-    <div class="section">
+    <!-- <div class="section">
         <label>評価項目 (最大9枚)</label>
         <div id="reviewContainer">
             <div class="review-entry">
@@ -237,6 +237,15 @@
             </div>
         </div>
         <button class="btn btn-add" onclick="addReviewField()">＋ 項目を追加する</button>
+    </div> -->
+    <div class="section">
+        <label>評価内容（以下の形式で入力してください）</label>
+        <div style="font-size: 0.8rem; color: var(--text-sub); margin-bottom: 5px;">
+            料理名<br>
+            ★の数（1〜5）<br>
+            コメント
+        </div>
+        <textarea id="bulkReviewInput" placeholder="例：&#10;特製醤油ラーメン&#10;5&#10;スープが最高にDOだ！&#10;&#10;餃子&#10;4&#10;皮がモチモチだDO！" style="height: 250px;"></textarea>
     </div>
 
     <button class="btn btn-generate" id="generateBtn" onclick="generatePrompt()">プロンプトを生成する</button>
@@ -345,15 +354,63 @@
         }
     }
 
+    // async function generatePrompt() {
+    //     const btn = document.getElementById('generateBtn');
+    //     const reviews = Array.from(document.querySelectorAll('.review-entry')).map(el => ({
+    //         dishName: el.querySelector('.dish-name').value,
+    //         stars: parseInt(el.querySelector('.stars').value) || 5,
+    //         comment: el.querySelector('.comment').value
+    //     })).filter(r => r.dishName.trim() !== "");
+
+    //     if (reviews.length === 0) return alert("項目を埋めてDO！");
+
+    //     btn.disabled = true;
+    //     showLoading("プロンプト生成中だDO...");
+
+    //     try {
+    //         const response = await fetch('/api/generate', {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify({
+    //                 title: document.getElementById('reviewTitle').value,
+    //                 characterSetting: document.getElementById('charSetting').value,
+    //                 style: document.getElementById('reviewStyle').value,
+    //                 reviews: reviews
+    //             })
+    //         });
+    //         const data = await response.json();
+    //         document.getElementById('promptResult').textContent = data.prompt;
+    //         document.getElementById('resultContainer').style.display = 'block';
+    //         document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' });
+    //     } catch (e) {
+    //         alert("失敗したDO...");
+    //     } finally {
+    //         btn.disabled = false;
+    //         hideLoading();
+    //     }
+    // }
+
     async function generatePrompt() {
         const btn = document.getElementById('generateBtn');
-        const reviews = Array.from(document.querySelectorAll('.review-entry')).map(el => ({
-            dishName: el.querySelector('.dish-name').value,
-            stars: parseInt(el.querySelector('.stars').value) || 5,
-            comment: el.querySelector('.comment').value
-        })).filter(r => r.dishName.trim() !== "");
+        const text = document.getElementById('bulkReviewInput').value.trim();
+        
+        if (!text) return alert("内容を入力してDO！");
 
-        if (reviews.length === 0) return alert("項目を埋めてDO！");
+        // テキストを空行または改行で分割し、3行ずつの塊にする
+        const lines = text.split(/\n/).map(line => line.trim()).filter(line => line !== "");
+        const reviews = [];
+
+        for (let i = 0; i < lines.length; i += 3) {
+            if (lines[i]) {
+                reviews.push({
+                    dishName: lines[i],
+                    stars: parseInt(lines[i + 1]) || 5, // 2行目が数値でない場合は5にする
+                    comment: lines[i + 2] || ""        // 3行目がない場合は空文字
+                });
+            }
+        }
+
+        if (reviews.length === 0) return alert("正しい形式で入力してDO！");
 
         btn.disabled = true;
         showLoading("プロンプト生成中だDO...");
