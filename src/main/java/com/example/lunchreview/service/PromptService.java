@@ -66,8 +66,8 @@ public class PromptService {
         // 3. 最終プロンプトテンプレート
         return String.format("""
             [Canvas Layout: 80/20 Split]
-            - UPPER 80%%: A multi-panel montage of %d distinct food reviews.
-            - LOWER 20%%: A special character showcase area (Signature Illustration).
+            - UPPER 80%%: A multi-panel montage of 9 distinct food reviews, featuring the "Fixed Character: DO" in every panel.
+            - LOWER 20%%: A special character showcase area (Signature Illustration) dedicated to the "Fixed Character: DO".
 
             [Overall Structure & Style]
             %s.
@@ -79,6 +79,7 @@ public class PromptService {
             %s
 
             [Upper Area: Grid Content (%d Panels)]
+            In each of the following 9 panels, depict the "Fixed Character: DO" performing the specified actions and expressions:
             %s
 
             [Lower Area: Character Showcase (Signature Illustration)]
